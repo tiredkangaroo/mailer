@@ -33,6 +33,8 @@ code {
   padding: 1px 5px;
   font-size: 0.9em;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Top bar */
