@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mailer — Gmail mail merge</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">✉️ Mailer</div>
+    <div class="auth" id="auth-area"></div>
+  </header>
+
+  <main id="app">
+    <!-- List view -->
+    <section id="view-list" class="view">
+      <div class="view-head">
+        <h1>Emails</h1>
+        <button id="btn-new" class="btn primary">New email</button>
+      </div>
+      <div id="list-container"></div>
+    </section>
+
+    <!-- Compose view -->
+    <section id="view-compose" class="view hidden">
+      <div class="view-head">
+        <button id="btn-back" class="btn ghost">← Back</button>
+        <h1 id="compose-title">New email</h1>
+        <div class="actions">
+          <button id="btn-save" class="btn">Save draft</button>
+          <button id="btn-send" class="btn primary">Send</button>
+        </div>
+      </div>
+
+      <div class="compose-grid">
+        <div class="compose-main">
+          <label class="field">Subject
+            <input id="f-subject" type="text" placeholder="Your subject — supports {{ templating }}" />
+          </label>
+
+          <label class="field">Recipients
+            <textarea id="f-recipients" rows="4"
+              placeholder="Comma-separated emails, e.g.:&#10;john@example.com, Jane &lt;jane@example.com&gt;"></textarea>
+            <div class="field-hint">
+              <button id="btn-import-csv" class="btn ghost sm">Import CSV</button>
+              <button id="btn-import-json" class="btn ghost sm">Import JSON</button>
+              <button id="btn-clear-recipients" class="btn ghost sm">Clear</button>
+              <input type="file" id="csv-input" accept=".csv,text/csv" hidden />
+              <input type="file" id="json-input" accept=".json,application/json" hidden />
+              <span id="recipient-count" class="muted"></span>
+            </div>
+          </label>
+
+          <div class="row">
+            <label class="field">CC
+              <input id="f-cc" type="text" placeholder="cc@example.com" />
+            </label>
+            <label class="field">BCC
+              <input id="f-bcc" type="text" placeholder="bcc@example.com" />
+            </label>
+          </div>
+
+          <label class="field">Body
+            <textarea id="f-body" rows="12" placeholder="Hey {{ name }}!&#10;&#10;Your email: {{ email }}"></textarea>
+          </label>
+
+          <div class="attachments">
+            <div class="attachments-head">
+              <span class="attachments-label">Attachments</span>
+              <button id="btn-add-attachment" class="btn ghost sm">Add file</button>
+              <input type="file" id="attachment-input" hidden multiple />
+            </div>
+            <ul id="attachment-list"></ul>
+          </div>
+        </div>
+
+        <aside class="compose-side">
+          <div class="panel">
+            <h2>Templating guide</h2>
+            <p>Wrap a variable in double curly braces — <code>{{ variable }}</code> — in the subject, body, CC, or BCC. Every recipient receives their own personalized copy.</p>
+            <h3>Available variables</h3>
+            <ul id="var-list" class="vars"></ul>
+            <h3>How to set values</h3>
+            <ul class="guide">
+              <li><code>{{ email }}</code> is always the recipient's address.</li>
+              <li>Type <code>Name &lt;email@example.com&gt;</code> in the recipient list to set <code>{{ name }}</code>.</li>
+              <li>Import a CSV with an <code>Email</code> column (optionally a <code>Name</code> column). Every other column becomes a custom variable — headers are lowercased and spaces become underscores, e.g. <code>Company Name</code> → <code>{{ company_name }}</code>.</li>
+              <li>Import a JSON array of objects (or paste one into the recipients box), e.g. <code>[{"email":"a@x.com","name":"A","company":"Acme"}]</code>. <code>email</code>/<code>name</code> are recognized; other keys become variables.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h2>Preview</h2>
+            <div class="preview-box">
+              <div class="preview-subject" id="preview-subject"></div>
+              <div class="preview-body" id="preview-body"></div>
+            </div>
+            <p class="muted" id="preview-note"></p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Detail view -->
+    <section id="view-detail" class="view hidden">
+      <div class="view-head">
+        <button id="btn-back-2" class="btn ghost">← Back</button>
+        <h1 id="detail-title">Email</h1>
+        <div class="actions" id="detail-actions"></div>
+      </div>
+      <div id="detail-container"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
