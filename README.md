@@ -12,7 +12,7 @@ A self-hosted mail-merge web app that sends templated emails through the **Gmail
 - **Live preview** and an in-app templating guide while composing.
 - **Attachments** uploaded once and attached to every outgoing message.
 - **Per-recipient send state** (`not sent`, `sent`, `failed`) stored for every recipient on every email. A recipient that is `sent` is **never** retried automatically.
-- **Retry failed recipients only** — a failed email is re-sent without touching already-sent recipients.
+- **Resend remaining** — any unsent or failed recipient can be sent later without touching the already-sent ones.
 - **Immutability**: once anything has been sent, the email becomes read-only (still viewable, but no edits/deletes).
 - **"Open in Gmail"** button per sent recipient, linking straight to the sent message (`https://mail.google.com/mail/u/0/#sent/<message id>`).
 - **Crash-safe**: progress is written to disk per recipient, so an interrupted send can be resumed with "Retry failed".
@@ -105,10 +105,10 @@ Variables are written as `{{ name }}`, `{{ email }}`, or any CSV column / JSON k
 
 ### Sending & retrying
 
-- **Send** delivers to every recipient whose state is `not sent`.
-- If some fail (e.g. a bounced address or a transient API error), the email shows **Partial** and a **Retry N failed** button.
-- **Retry failed** re-sends *only* the failed recipients. Recipients already `sent` are never re-sent.
-- Once an email is sent (or partially sent), it becomes **immutable** — you can still view it and retry failures, but can't edit or delete it.
+- **Send** delivers to every recipient that hasn't been sent yet — both `not sent` and previously `failed` recipients. Recipients already `sent` are **never** re-sent.
+- If some fail (e.g. a bounced address or a transient API error), the email shows **Partial** with a **Send N remaining** button.
+- Clicking **Send N remaining** re-sends only the unsent/failed recipients, leaving the already-delivered ones untouched.
+- Once an email is sent (or partially sent), it becomes **immutable** — you can still view it and send the remaining recipients, but can't edit or delete it.
 
 ### Opening sent mail in Gmail
 

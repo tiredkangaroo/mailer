@@ -200,21 +200,20 @@ router.post('/emails/:id/send', requireAuth, (req, res) => {
   if (email.status === 'sending') return res.status(409).json({ error: 'A send is already in progress.' });
   if (email.status === 'sent') return res.status(400).json({ error: 'All recipients have already been sent.' });
 
-  const retry = Boolean(req.body && req.body.retry);
-  const statuses = retry ? ['failed'] : ['not_sent'];
-  const targets = db.getRecipients(email.id).filter((r) => statuses.includes(r.send_status));
+  // Send to every recipient that hasn't been sent yet (both "not sent" and
+  // previously "failed" recipients). "sent" recipients are never re-sent.
+  const targets = db.getRecipients(email.id).filter((r) => r.send_status !== 'sent');
 
   if (targets.length === 0) {
-    const msg = retry ? 'No failed recipients to retry.' : 'No pending recipients to send.';
-    return res.status(400).json({ error: msg });
+    return res.status(400).json({ error: 'All recipients have already been sent.' });
   }
 
   db.setEmailStatus(email.id, 'sending');
-  startSend(email.id, statuses);
+  startSend(email.id);
   res.status(202).json({ ok: true, queued: targets.length });
 });
 
-function startSend(emailId, statuses) {
+function startSend(emailId) {
   if (inFlight.has(emailId)) return;
   inFlight.add(emailId);
 
@@ -239,7 +238,7 @@ function startSend(emailId, statuses) {
         })
         .filter(Boolean);
 
-      const targets = db.getRecipients(emailId).filter((r) => statuses.includes(r.send_status));
+      const targets = db.getRecipients(emailId).filter((r) => r.send_status !== 'sent');
       for (const r of targets) {
         const email = db.getEmail(emailId);
         const data = recipientData(r);

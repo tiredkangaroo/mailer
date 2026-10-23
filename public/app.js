@@ -347,7 +347,7 @@ async function saveDraft() {
   return email;
 }
 
-async function sendEmail(retry) {
+async function sendEmail() {
   if (!state.auth.authenticated) {
     toast('Please sign in with Google first.', 'error');
     window.location.href = '/auth/google';
@@ -355,13 +355,25 @@ async function sendEmail(retry) {
   }
   try {
     const email = await saveDraft();
-    await api(`/api/emails/${email.id}/send`, {
-      method: 'POST',
-      body: JSON.stringify({ retry: !!retry }),
-    });
+    await api(`/api/emails/${email.id}/send`, { method: 'POST', body: JSON.stringify({}) });
     show('detail');
     await loadDetail(email.id);
-    toast(retry ? 'Retrying failed recipients…' : 'Sending…');
+    toast('Sending…');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function sendFromDetail(id) {
+  if (!state.auth.authenticated) {
+    toast('Please sign in with Google first.', 'error');
+    window.location.href = '/auth/google';
+    return;
+  }
+  try {
+    await api(`/api/emails/${id}/send`, { method: 'POST', body: JSON.stringify({}) });
+    await loadDetail(id);
+    toast('Sending…');
   } catch (err) {
     toast(err.message, 'error');
   }
@@ -511,25 +523,27 @@ function renderDetail() {
   // Actions
   const actions = $('detail-actions');
   let html = '';
-  if (e.status === 'draft') {
-    html += `<button class="btn" id="act-edit">Edit</button>`;
-    if (e.counts.not_sent > 0) html += `<button class="btn primary" id="act-send">Send</button>`;
-    html += `<button class="btn danger" id="act-delete">Delete</button>`;
-  } else if (e.status === 'sending') {
+  if (e.status === 'sending') {
     html += `<span class="badge sending">Sending…</span>`;
   } else {
-    if (e.counts.failed > 0) html += `<button class="btn primary" id="act-retry">Retry ${e.counts.failed} failed</button>`;
+    if (e.status === 'draft') {
+      html += `<button class="btn" id="act-edit">Edit</button>`;
+      html += `<button class="btn danger" id="act-delete">Delete</button>`;
+    }
+    const pending = e.counts.not_sent + e.counts.failed;
+    if (pending > 0) {
+      const label = e.status === 'draft' ? 'Send' : `Send ${pending} remaining`;
+      html += `<button class="btn primary" id="act-send">${label}</button>`;
+    }
   }
   actions.innerHTML = html;
 
   const actEdit = $('act-edit');
   const actSend = $('act-send');
   const actDelete = $('act-delete');
-  const actRetry = $('act-retry');
   if (actEdit) actEdit.addEventListener('click', () => openCompose(e));
-  if (actSend) actSend.addEventListener('click', () => sendEmail(false));
+  if (actSend) actSend.addEventListener('click', () => sendFromDetail(e.id));
   if (actDelete) actDelete.addEventListener('click', () => deleteEmail(e.id));
-  if (actRetry) actRetry.addEventListener('click', () => sendEmail(true));
 
   let banner = '';
   if (e.status === 'sending') {
@@ -537,7 +551,7 @@ function renderDetail() {
   } else if (e.status === 'sent') {
     banner = `<div class="banner success">This email has been fully sent and is now immutable.</div>`;
   } else if (e.status === 'partial') {
-    banner = `<div class="banner warn">Partially sent. This email is immutable — you can retry failed recipients.</div>`;
+    banner = `<div class="banner warn">Partially sent. This email is immutable — you can send the remaining recipients.</div>`;
   }
 
   const attachments = e.attachments && e.attachments.length
@@ -696,7 +710,7 @@ function init() {
     }
   });
 
-  $('btn-send').addEventListener('click', () => sendEmail(false));
+  $('btn-send').addEventListener('click', () => sendEmail());
 
   $('f-recipients').addEventListener('input', syncRecipientsFromTextarea);
   $('f-subject').addEventListener('input', updateVarsAndPreview);
